@@ -7,7 +7,7 @@ try:
             user = user_postgres
             password=pass_postgres
             host=localhost
-            port=5433
+            port=5432
             """
 
     # Guardem en una variable la connexió amb la BBDD
