@@ -23,7 +23,8 @@ def getProductById(prod: Product):
 
 @app.post("/product/")
 def createProduct(prod: Product):
-    return {"message": f"el nom és {prod.name}"}
+    insertat = productDB.insert_product(prod)
+    return insertat
 
 
 @app.put("/product/")
