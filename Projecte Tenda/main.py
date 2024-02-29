@@ -12,13 +12,20 @@ def read_root():
 
 @app.get("/product/")
 def getProduct():
-    productDB.consulta()
-    return {"message": "consulta producte", "state": 200}
+    try:
+        products_data = productDB.getProductes()
+        return {"data": products_data}
+    except Exception as e:
+        return {"message": f"Error en la consulta de productes: {str(e)}", "state": 500}
 
 
 @app.get("/product/{id}")
 def getProductById(prod: Product):
-    return {"ID": f"{prod.id}", "Nom": f"{prod.name}", "Descripció": f"{prod.description}", "Preu": f"{prod.price}", "Unit: ": f"{prod.unit}"}
+    try:
+        product_data = productDB.getProductById(prod.product_id)
+        return {"ID": f"{product_data['product_id']}", "Nom": f"{product_data['name']}", "Descripció": f"{product_data['description']}", "Companyia": f"{product_data['company']}", "Preu": f"{product_data['price']}", "Unit": f"{product_data['unit']}"}
+    except Exception as e:
+        return {"message": f"Error en la consulta de productes: {str(e)}", "state": 500}
 
 
 @app.post("/product/")

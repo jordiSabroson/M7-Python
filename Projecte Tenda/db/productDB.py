@@ -37,15 +37,39 @@ def insert_product(product: Product):
         conn.close()
 
 
-def consulta():
+def getProductes():
     try:
         conn = clientPS.client()
 
         cur = conn.cursor()
 
+        cur.execute("SELECT * FROM public.product")
+
+        data = cur.fetchall()
+
+        return data
+
+    except Exception as e:
+        print(f'ERROR: {e}')
+
+        conn.rollback()
+
+    finally:
+        conn.close()
+
+
+def getProductById(product: Product):
+    try:
+        conn = clientPS.client()
+
+        cur = conn.cursor()
+
+        cur.execute(
+            "SELECT * FROM public.product WHERE product_id = %s", (product.id))
+
         data = cur.fetchone()
 
-        return {"message": {data}}
+        return {'id': data[0], 'name': data[1], 'description': data[2], 'company': data[3], 'price': data[4], 'unit': data[5]}
 
     except Exception as e:
         print(f'ERROR: {e}')
