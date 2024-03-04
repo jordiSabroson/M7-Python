@@ -5,9 +5,7 @@ from model.Product import Product
 def insert_product(product: Product):
     try:
         conn = clientPS.client()
-
         cur = conn.cursor()
-
         cur.execute("""
             INSERT INTO public.product(
                 name, description, company, price, units, subcategory_id)
@@ -23,16 +21,13 @@ def insert_product(product: Product):
         ))
 
         id_insertat = cur.fetchone()[0]
-
         conn.commit()
 
         return {"id": id_insertat, "missatge": "producte insertat correctament"}
 
     except Exception as e:
         print(f'ERROR: {e}')
-
         conn.rollback()
-
     finally:
         conn.close()
 
@@ -40,41 +35,34 @@ def insert_product(product: Product):
 def getProductes():
     try:
         conn = clientPS.client()
-
         cur = conn.cursor()
-
         cur.execute("SELECT * FROM public.product")
-
         data = cur.fetchall()
-
         return data
 
     except Exception as e:
         print(f'ERROR: {e}')
-
         conn.rollback()
-
     finally:
         conn.close()
 
 
-def getProductById(product: Product):
+def getProductById(id):
     try:
         conn = clientPS.client()
-
         cur = conn.cursor()
-
         cur.execute(
-            "SELECT * FROM public.product WHERE product_id = %s", (product.id))
-
+            "SELECT * FROM public.product WHERE product_id = %s", (id,))
         data = cur.fetchone()
 
-        return {'id': data[0], 'name': data[1], 'description': data[2], 'company': data[3], 'price': data[4], 'unit': data[5]}
+        if data:
+            return {'id': data[0], 'name': data[1], 'description': data[2], 'company': data[3], 'price': data[4], 'unit': data[5]}
+        else:
+            print("No hi ha productes per l'ID seleccionat")
+            return {"message": "Producte no trobat", "state": 404}
 
     except Exception as e:
         print(f'ERROR: {e}')
-
         conn.rollback()
-
     finally:
         conn.close()

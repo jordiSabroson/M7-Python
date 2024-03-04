@@ -20,10 +20,10 @@ def getProduct():
 
 
 @app.get("/product/{id}")
-def getProductById(prod: Product):
+def getProductById(id):
     try:
-        product_data = productDB.getProductById(prod.product_id)
-        return {"ID": f"{product_data['product_id']}", "Nom": f"{product_data['name']}", "Descripció": f"{product_data['description']}", "Companyia": f"{product_data['company']}", "Preu": f"{product_data['price']}", "Unit": f"{product_data['unit']}"}
+        product_data = productDB.getProductById(id)
+        return {"data": product_data}
     except Exception as e:
         return {"message": f"Error en la consulta de productes: {str(e)}", "state": 500}
 
