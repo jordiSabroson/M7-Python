@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from db import productDB
 from model.Product import Product
 
@@ -7,7 +7,7 @@ app = FastAPI()
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {"Hola": "Bondia"}
 
 
 @app.get("/product/")
@@ -34,11 +34,25 @@ def createProduct(prod: Product):
     return insertat
 
 
-@app.put("/product/")
-def updateProduct():
-    return {"message": f"post"}
+@app.put("/product/{id}")
+def updateProduct(id, prod: Product):
+    modificat = productDB.modifyProduct(id, prod)
+    return modificat
 
 
-@app.delete("/product/")
-def deleteProduct():
-    return {"message": f"post"}
+@app.delete("/product/{id}")
+def deleteProduct(id):
+    eliminat = productDB.deleteProduct(id)
+    return eliminat
+
+
+@app.get("/productAll/")
+def getAllProducts():
+    retorn = productDB.getAllProducts()
+    return retorn
+
+
+@app.post("/loadProducts")
+async def loadProducts(file: UploadFile):
+    fitxer = productDB.loadProducts(file)
+    return fitxer
