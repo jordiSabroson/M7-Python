@@ -1,8 +1,6 @@
 from db import clientPS
 from model.Product import Product
-import csv
-from datetime import datetime
-import codecs
+import pandas as pd
 
 
 def insert_product(product: Product):
@@ -152,60 +150,17 @@ def getAllProducts():
 def loadProducts(file):
     try:
         conn = clientPS.client()
-        cur = conn.cursor()
-        csv_reader = csv.reader(codecs.iterdecode(
-            file.file, 'utf-8'), delimiter=',')
+        csv_reader = pd.read_csv(file.file, header=0)
 
-        for row in csv_reader:
-            category_name, subcategory_name, product_name = row
-
-            # Procesar la categoría
-            cur.execute("""
-                SELECT category_id FROM public.category WHERE name = %s
-            """, (category_name,))
-            category_id = cur.fetchone()
-
-            if category_id:
-                # La categoría existe, realizar una actualización
-                cur.execute("""
-                    UPDATE public.category SET name = %s, updated_at = %s WHERE category_id = %s
-                """, (category_name, datetime.now(), category_id))
-            else:
-                # La categoría no existe, realizar una inserción
-                cur.execute("""
-                    INSERT INTO public.category (name, created_at, updated_at) VALUES (%s, %s, %s)
-                """, (category_name, datetime.now(), datetime.now()))
-
-            # Subcategoria
-            cur.execute("""
-                    SELECT subcategory_id FROM public.subcategory WHERE name = %s
-            """, (subcategory_name,))
-            subcategory_id = cur.fetchone()
-
-            if subcategory_id:
-                cur.execute("""
-                        UPDATE public.subcategory SET name = %s, updated_at = %s WHERE subcategory_id = %s
-                """, (subcategory_name, datetime.now(), subcategory_id))
-            else:
-                cur.execute("""
-                        INSERT INTO public.subcategory (name, created_at, updated_at) VALUES (%s, %s, %s)
-                """, (subcategory_name, datetime.now(), datetime.now()))
-
-            # Producte
-            cur.execute("""
-                    SELECT product_id FROM public.product WHERE name = %s
-            """, (product_name,))
-            product_id = cur.fetchone()
-
-            if product_id:
-                cur.execute("""
-                        UPDATE public.product SET name = %s, updated_at = %s WHERE product_id = %s
-                """, (product_name, datetime.now(), product_id))
-            else:
-                cur.execute("""
-                        INSERT INTO public.product (name, created_at, updated_at) VALUES (%s, %s, %s)
-                """, (product_name, datetime.now(), datetime.now()))
-
+        with conn.cursor() as cur:
+            for index, row in csv_reader.iterrows():
+                fila = row.to_dict()
+                category_id = updateCategory(
+                    conn, fila["id_categoria"], fila["nom_categoria"])
+                subcategory_id = updateSubcategory(
+                    conn, fila["id_subcategoria"], fila["nom_subcategoria"], category_id)
+                product_id = updateProduct(conn, fila["id_producto"], fila["nom_producto"],
+                                           fila["descripcion_producto"], fila["companyia"], fila["precio"], fila["unidades"], subcategory_id)
         conn.commit()
         return {"message": "Càrrega massiva completada correctament", "state": 200}
 
@@ -215,3 +170,81 @@ def loadProducts(file):
         return {"message": f"Error en la càrrega massiva: {str(e)}", "state": 500}
     finally:
         conn.close()
+
+
+def updateCategory(conn, id, name):
+    cur = conn.cursor()
+
+    # Processar la categoria
+    cur.execute("SELECT * FROM public.category WHERE category_id = %s", (id,))
+
+    category_id = cur.fetchone()
+
+    if category_id:
+        # Si la categoria existeix, s'actualitza la seva informació
+        cur.execute("""
+        UPDATE public.category SET name = %s, updated_at = CURRENT_TIMESTAMP WHERE category_id = %s
+        """, (name, id))
+    else:
+        # En canvi, si la categoria no existeix es fa un insert
+        cur.execute("""
+        INSERT INTO public.category (name, created_at, updated_at) VALUES (%s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """, (name,))
+    return id
+
+
+def updateSubcategory(conn, id, name, category_id):
+    cur = conn.cursor()
+
+    cur.execute(
+        "SELECT category_id FROM public.category WHERE category_id = %s", (category_id,))
+    existing_category = cur.fetchone()
+
+    if not existing_category:
+        print(
+            f"Error: No existe la categoría con el category_id {category_id}")
+        return id
+
+    # Subcategoria
+    cur.execute(
+        "SELECT subcategory_id FROM public.subcategory WHERE subcategory_id = %s", (id,))
+
+    subcategory_id = cur.fetchone()
+
+    if subcategory_id:
+        cur.execute("""
+                UPDATE public.subcategory SET name = %s, category_id = %s, updated_at = CURRENT_TIMESTAMP WHERE subcategory_id = %s
+        """, (name, category_id, id))
+    else:
+        cur.execute("""
+        INSERT INTO public.subcategory (name, category_id, created_at, updated_at) VALUES (%s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """, (name, category_id))
+    return id
+
+
+def updateProduct(conn, id, name, description, company, price, units, subcategory_id):
+    cur = conn.cursor()
+
+    # Verificar si el subcategory_id existe en la tabla "subcategory"
+    cur.execute(
+        "SELECT subcategory_id FROM public.subcategory WHERE subcategory_id = %s", (subcategory_id,))
+    existing_subcategory = cur.fetchone()
+
+    if not existing_subcategory:
+        print(
+            f"Error: No existe la subcategoría con el subcategory_id {subcategory_id}")
+        return id
+
+    # Producte
+    cur.execute("""
+            SELECT * FROM public.product WHERE product_id = %s
+    """, (id,))
+    product_id = cur.fetchone()
+
+    if product_id:
+        cur.execute("UPDATE public.product SET name = %s, description = %s, company = %s, price = %s, units = %s, subcategory_id = %s, updated_at = CURRENT_TIMESTAMP WHERE product_id = %s",
+                    (name, description, company, price, units, subcategory_id, id))
+    else:
+        cur.execute("INSERT INTO public.product(product_id, name, description, company, price, units, subcategory_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                    (id, name, description, company, price, units, subcategory_id))
+    return id
