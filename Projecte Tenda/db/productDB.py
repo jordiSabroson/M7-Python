@@ -5,8 +5,14 @@ import pandas as pd
 
 def insert_product(product: Product):
     try:
+        # Creació d'una variable que guarda la connexió amb la base de dades importada del fitxer clientPS
         conn = clientPS.client()
+
+        # Amb la connexió, fem un cursor per poder recórrer la BBDD
         cur = conn.cursor()
+
+        # Amb el cursor, executem una sentència SQL per insertar un producte a la taula "product"
+        # amb els valors que rebem per POST
         cur.execute("""
             INSERT INTO public.product(
                 name, description, company, price, units, subcategory_id)
@@ -21,15 +27,22 @@ def insert_product(product: Product):
             product.subcategory_id
         ))
 
+        # Agafem l'ID de l'element insertat per mostrar-lo a la resposta
         id_insertat = cur.fetchone()[0]
+
+        # Fem un commit per executar els canvis i que es facin efectius a la BBDD
         conn.commit()
 
         return {"id": id_insertat, "missatge": "producte insertat correctament"}
 
     except Exception as e:
         print(f'ERROR: {e}')
+
+        # En cas de que salti una excepció, es fa un rollback per desfer els últims canvis fets amb el commit
         conn.rollback()
     finally:
+
+        # En tot cas, al acabar tanquem la connexió
         conn.close()
 
 
@@ -38,6 +51,8 @@ def getProductes():
         conn = clientPS.client()
         cur = conn.cursor()
         cur.execute("SELECT * FROM public.product")
+
+        # Mètode fetchall que recupera tots els elements de la BBDD
         data = cur.fetchall()
         return data
 
@@ -118,6 +133,8 @@ def getAllProducts():
     try:
         conn = clientPS.client()
         cur = conn.cursor()
+
+        # Sentència SQL que ajunta les tres taules per poder mostrar els seus valors en un return
         cur.execute("""
             SELECT c.name AS category_name, sc.name AS subcategory_name, p.name AS product_name, p.company AS product_company, p.price AS product_price
             FROM product p
@@ -127,6 +144,8 @@ def getAllProducts():
 
         data = cur.fetchall()
 
+        # Array on s'emmagatzema la resposta que sortirà pel JSON. S'itera per cada fila de la variable data
+        # que guarda tota la info de la BBDD
         product_info_list = [
             {
                 "category_name": row[0],
