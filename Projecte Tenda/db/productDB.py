@@ -150,8 +150,11 @@ def getAllProducts():
 def loadProducts(file):
     try:
         conn = clientPS.client()
+
+        # S'utilitza el pandas per llegir el fitxer csv
         csv_reader = pd.read_csv(file.file, header=0)
 
+        # Amb el cursor, iterem per cada fila del csv i amb l'ajuda de funcions executem les ordres SQL
         with conn.cursor() as cur:
             for index, row in csv_reader.iterrows():
                 fila = row.to_dict()
@@ -188,8 +191,8 @@ def updateCategory(conn, id, name):
     else:
         # En canvi, si la categoria no existeix es fa un insert
         cur.execute("""
-        INSERT INTO public.category (name, created_at, updated_at) VALUES (%s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        """, (name,))
+        INSERT INTO public.category (category_id, name, created_at, updated_at) VALUES (%s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """, (id, name,))
     return id
 
 
@@ -205,7 +208,6 @@ def updateSubcategory(conn, id, name, category_id):
             f"Error: No existe la categoría con el category_id {category_id}")
         return id
 
-    # Subcategoria
     cur.execute(
         "SELECT subcategory_id FROM public.subcategory WHERE subcategory_id = %s", (id,))
 
@@ -217,15 +219,14 @@ def updateSubcategory(conn, id, name, category_id):
         """, (name, category_id, id))
     else:
         cur.execute("""
-        INSERT INTO public.subcategory (name, category_id, created_at, updated_at) VALUES (%s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        """, (name, category_id))
+        INSERT INTO public.subcategory (subcategory_id, name, category_id, created_at, updated_at) VALUES (%s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """, (id, name, category_id,))
     return id
 
 
 def updateProduct(conn, id, name, description, company, price, units, subcategory_id):
     cur = conn.cursor()
 
-    # Verificar si el subcategory_id existe en la tabla "subcategory"
     cur.execute(
         "SELECT subcategory_id FROM public.subcategory WHERE subcategory_id = %s", (subcategory_id,))
     existing_subcategory = cur.fetchone()
@@ -235,7 +236,6 @@ def updateProduct(conn, id, name, description, company, price, units, subcategor
             f"Error: No existe la subcategoría con el subcategory_id {subcategory_id}")
         return id
 
-    # Producte
     cur.execute("""
             SELECT * FROM public.product WHERE product_id = %s
     """, (id,))
