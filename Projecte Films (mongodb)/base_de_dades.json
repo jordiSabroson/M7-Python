@@ -1,0 +1,17 @@
+{
+	"title": “str”,
+
+	"director": “str”,
+
+	"year": int,
+
+	"genre": “str”,
+
+	"rating":number ,
+
+	"country": “str”,
+
+	"created_at": “date”,
+
+	"update_at": “date”
+}
