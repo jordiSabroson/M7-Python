@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class Film(BaseModel):
@@ -8,5 +9,5 @@ class Film(BaseModel):
     genre: str
     rating: float
     country: str
-    created_at: str
-    update_at: str
+    created_at: datetime = None
+    update_at: datetime = None
